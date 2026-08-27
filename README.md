@@ -1,141 +1,92 @@
-# IIC-Platform
-**Israel–India Corridor Platform — Administrative Enablement Provider**
+# IICPlatform
 
-> B2B compliance and orchestration layer connecting PIBA-licensed Israeli Ta'agidim with MEA/NSDC-registered Indian Recruiting Agents (IRAs).
+**Compliance-first governance and workflow platform for regulated cross-border workforce administration.**
 
----
+IICPlatform is being designed as an Israel-controlled technology and administrative enablement layer. Its first implementation environment is the India–Israel construction workforce corridor for licensed Israeli Ta'agidim and other legally authorized participants.
 
-## What IIC-Platform IS
+## Current status
 
-| Role | Description |
-|------|-------------|
-| Administrative Enablement Provider | Compliance execution layer between Ta'agid and IRA |
-| Compliance Documentation Engine | End-to-end PIBA + MEA documentation governance |
-| India–Israel Orchestration | Worker pipeline coordination, BI monitoring, reporting |
-| Risk-Reduction Partner | Audit trails, zero-fee enforcement, complaint tracking |
+The project is at **controlled technical prototype** stage.
 
-## What IIC-Platform is NOT
+- Target architecture baseline: approved.
+- Evidence-first case-file prototype: implemented with synthetic data.
+- Gate 7: pending execution evidence and Owner decision.
+- Pilot, production, procurement, personal-data processing, and AI activation: **not authorized**.
 
-- ❌ Employer / Employer of Record
-- ❌ PIBA license holder
-- ❌ Signatory to worker employment contracts
-- ❌ Payroll operator
-- ❌ Recruiter charging workers
+## What the platform is
 
----
+- Workflow and case-management infrastructure.
+- Evidence and document-governance layer.
+- Role-based operational workspace.
+- Append-only audit and control surface.
+- Configurable foundation for regulated workforce administration.
 
-## Business Model
+## What the platform is not
 
-```
-Ta'agid (Israeli EOR)  ←→  IIC-Platform  ←→  IRA (India recruiter)
-                                 ↑
-                     Administrative Enablement
-                     Compliance Documentation
-                     Worker Pipeline Governance
-```
+- An employer or Employer of Record.
+- A recruiting agency or manpower corporation.
+- A visa, permit, licensing, or government decision-maker.
+- A payroll operator.
+- A substitute for legal, privacy, security, or regulatory accountability.
 
-**Revenue streams:**
-- Per-worker placement fee: **$300 USD** (one-time, paid by Ta'agid)
-- Monthly governance retainer: **$2,500 USD/client** (recurring)
+## Controlled prototype
 
-**Year-1 target:** 4 active Ta'agid clients → ~$135K revenue
+The working frontend source is located in [`platform/prototype`](platform/prototype/README.md).
 
----
+The prototype demonstrates one evidence-first worker case for a licensed Ta'agid case manager:
 
-## Key Market Data
+- evidence completeness and controlled task groups;
+- missing-evidence requests;
+- operational review notes;
+- access scope and integrity indicators;
+- append-only audit events and history;
+- explicit boundaries for functions outside the prototype scope.
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| PIBA-licensed contractors | 879 | [gov.il registry](https://www.gov.il/apps/moch/rasham/home) |
-| Indian workers in Israel (2025) | ~20,000 | PIBA/CIMI |
-| Foreign worker quota (2024) | 65,000+ | Government announcement |
-| 2030 target (Modi–Netanyahu, Feb 2026) | 50,000 | Bilateral agreement |
-| Worker complaints 2024 | 967 | PIBA/CIMI |
-| Compliance gap rate | 7.4% | Calculated |
+The prototype uses synthetic fixtures only. AI and live integrations are disabled.
 
----
+## Target architecture principles
 
-## Regulatory Framework
+- Shared Azure control plane with tenant-isolated data planes.
+- Microsoft Entra federation for organizational identities.
+- Role-based access, contextual controls, and segregation of duties.
+- Israel-primary hosting subject to service availability and legal review.
+- Configuration and feature flags instead of client-specific code forks.
+- Human authority for every legally significant decision.
+- AI limited to supervised checking, search, explanation, and recommendations after a separate activation decision.
 
-### Israeli Side — PIBA Procedure 9.4.0001
-- Ta'agid is the Employer of Record (EOR)
-- Workers recruited only via G2G/bilateral mechanisms
-- Min. equity for 351–1,000 workers: ₪2,000,000
-- Bank guarantee: ₪9,326/worker
+## Repository structure
 
-### Indian Side — MEA / NSDC
-- IRA agents registered with Ministry of External Affairs
-- IRA fee cap: Rs. 30,000 + 18% GST
-- **Zero-fee principle**: workers pay nothing for employment
-- Key G2G channel: [NSDC International](https://nsdcinternational.com)
-
----
-
-## Top Target Partners
-
-### Israeli Ta'agidim (PIBA-licensed)
-| Company | Score | Priority | Contact |
-|---------|-------|----------|---------|
-| Hoshiar | 115/130 | HIGH | info@hoshiar.co.il |
-| Reshef Group | 105/130 | HIGH | office@reshef-group.co.il |
-| Michlol Engineering | 105/130 | MEDIUM-HIGH | via website |
-| Kasif / Rishon LeZion | 90/130 | MEDIUM | local office |
-
-### Indian IRAs
-- Dynamic Staffing Services (105 Israeli employer agreements)
-- Gowell International
-- Travel Touch Manpower Agency
-- HBS Consultancy
-
----
-
-## Repository Structure
-
-```
+```text
 IIC-Platform/
-├── README.md                    # This file
-├── LICENSE                      # MIT
-├── .gitignore
-├── docs/
-│   ├── operating-model.md       # End-to-end operating model (11-step flow)
-│   ├── legal-framework.md       # Zero-fee principle, PIBA + MEA rules
-│   ├── icp-and-outreach.md      # ICP definition, top 10 shortlist, scripts
-│   └── 90-day-plan.md           # Activation plan: first retainer in 45 days
+├── README.md
+├── docs/                    # Research and operating-model materials
 ├── platform/
-│   ├── architecture.md          # Microsoft Azure stack overview
-│   ├── cost-estimate.md         # Platform cost estimate (Alex Rogovin)
-│   └── modules.md               # Compliance, billing, AI modules
+│   ├── architecture.md      # Earlier exploratory architecture note
+│   ├── cost-estimate.md     # Earlier exploratory estimate; not a commitment
+│   ├── modules.md           # Earlier module roadmap
+│   └── prototype/           # Controlled evidence-first frontend source
 └── scripts/
-    └── README.md                # CLI tools and automation scripts
 ```
 
----
+> Some earlier research notes remain in the repository for traceability. Values, legal statements, costs, schedules, and commercial assumptions in those notes are not controlled commitments unless adopted in a later approved master document.
 
-## 90-Day Activation Gate
+## Run the prototype
 
-> **Gate condition:** First paid Ta'agid retainer signed within **45 days**
+```bash
+cd platform/prototype
+npm install
+npm run dev
+```
 
-| Phase | Days | Key Actions |
-|-------|------|-------------|
-| Activate | 1–30 | Outreach to Hoshiar + Reshef; IRA MOU with Dynamic Staffing |
-| Convert | 31–60 | Close first retainer; follow up Michlol + Kasif |
-| Scale | 61–90 | Onboard 2nd Ta'agid; caregiver sector assessment |
+Validation:
 
----
-
-## Tech Stack (Microsoft Azure)
-
-The platform uses a Microsoft-based architecture for:
-- Personnel management automation
-- Financial accounting and payroll transparency
-- Migration law compliance (PIBA + MEA)
-- AI-powered document verification
-- Labor condition monitoring
-
-See [`platform/architecture.md`](platform/architecture.md) for full details.
-
----
+```bash
+npm run build
+npm run test:sites
+```
 
 ## License
 
 MIT © 2026 Alex Rogovin
+
+
