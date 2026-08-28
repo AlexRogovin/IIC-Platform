@@ -1,1 +1,796 @@
 
+import { useMemo, useState } from "react";
+import {
+  Archive,
+  ArrowLeft,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Circle,
+  CircleAlert,
+  CircleHelp,
+  Clock3,
+  Database,
+  FileCheck2,
+  FileClock,
+  FilePlus2,
+  Files,
+  Folder,
+  History,
+  Info,
+  LayoutList,
+  LockKeyhole,
+  Mail,
+  Menu,
+  MessageSquareText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Search,
+  Send,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserRound,
+  UsersRound,
+  X,
+} from "lucide-react";
+
+const NAV_ITEMS = [
+  { id: "cases", label: "My cases", icon: Folder },
+  { id: "new", label: "New case", icon: FilePlus2 },
+  { id: "workers", label: "Workers", icon: UsersRound },
+  { id: "tasks", label: "Tasks", icon: FileCheck2, count: 6 },
+  { id: "evidence", label: "Evidence library", icon: Files },
+  { id: "communications", label: "Communications", icon: Mail },
+  { id: "reports", label: "Reports", icon: LayoutList },
+  { id: "audit", label: "Audit log", icon: Archive },
+  { id: "settings", label: "Settings", icon: Settings },
+];
+
+const GROUPS = [
+  {
+    id: "engagement",
+    title: "1. Worker engagement",
+    summary: "2 of 2 completed",
+    tone: "complete",
+    defaultOpen: true,
+    items: [
+      { name: "Signed worker declaration", requirement: "Required", status: "Completed", updated: "26 Aug 2026" },
+      { name: "Terms of employment (IW)", requirement: "Required", status: "Completed", updated: "26 Aug 2026" },
+    ],
+  },
+  {
+    id: "predeparture",
+    title: "2. Pre-departure compliance",
+    summary: "2 of 5 completed",
+    tone: "warning",
+    defaultOpen: true,
+    items: [
+      { name: "Medical fitness certificate", requirement: "Required", status: "Completed", updated: "25 Aug 2026" },
+      { name: "Skills assessment / trade test", requirement: "Required", status: "Completed", updated: "25 Aug 2026" },
+      { name: "Safety training certificate", requirement: "Required", status: "Missing", updated: "—" },
+      { name: "Insurance (health & personal accident)", requirement: "Required", status: "Missing", updated: "—" },
+      { name: "Background check attestation", requirement: "Required", status: "Missing", updated: "—" },
+    ],
+  },
+  {
+    id: "travel",
+    title: "3. Travel & documentation",
+    summary: "0 of 3 completed",
+    tone: "neutral",
+    defaultOpen: true,
+    items: [
+      { name: "Passport biographic page", requirement: "Required", status: "Not started", updated: "—" },
+      { name: "Work visa approval", requirement: "Required", status: "Not started", updated: "—" },
+      { name: "Flight itinerary", requirement: "Required", status: "Not started", updated: "—" },
+    ],
+  },
+  {
+    id: "employer",
+    title: "4. Employer undertakings",
+    summary: "0 of 2 completed",
+    tone: "neutral",
+    defaultOpen: true,
+    items: [
+      { name: "Employer undertaking", requirement: "Required", status: "Not started", updated: "—" },
+      { name: "Accommodation confirmation", requirement: "Required", status: "Not started", updated: "—" },
+    ],
+  },
+];
+
+const INITIAL_AUDIT = [
+  { time: "27 Aug 2026, 09:14", title: "Case updated", detail: "Evidence status changed for 2 items", actor: "Case Manager" },
+  { time: "26 Aug 2026, 16:02", title: "Evidence uploaded", detail: "Terms of employment (IW)", actor: "Case Manager" },
+  { time: "26 Aug 2026, 15:48", title: "Evidence uploaded", detail: "Signed worker declaration", actor: "Case Manager" },
+  { time: "20 Aug 2026, 11:07", title: "Case created", detail: "Synthetic case fixture initialized", actor: "Case Manager" },
+];
+
+function Logo() {
+  return <div className="logo" aria-label="IICPlatform"><span>IIC</span>Platform</div>;
+}
+
+function StatusIcon({ status }) {
+  if (status === "Completed") return <CheckCircle2 aria-hidden="true" />;
+  if (status === "Missing") return <CircleAlert aria-hidden="true" />;
+  return <Circle aria-hidden="true" />;
+}
+
+function Sidebar({ collapsed, activeNav, onNavigate, onCollapse }) {
+  return (
+    <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
+      <div className="tenant-block">
+        <div className="tenant-icon"><Building2 aria-hidden="true" /></div>
+        {!collapsed && <div><strong>Cedar Workforce Ltd.</strong><span>Licensed Ta'agid</span></div>}
+      </div>
+      <nav aria-label="Primary navigation">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              className={`nav-item ${activeNav === item.id ? "nav-item--active" : ""}`}
+              onClick={() => onNavigate(item.id)}
+              title={collapsed ? item.label : undefined}
+            >
+              <Icon aria-hidden="true" />
+              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && item.count && <span className="nav-count">{item.count}</span>}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="sidebar-bottom">
+        <button className="nav-item" onClick={() => onNavigate("help")} title={collapsed ? "Help" : undefined}>
+          <CircleHelp aria-hidden="true" />{!collapsed && <span>Help</span>}
+        </button>
+        <button className="collapse-button" onClick={onCollapse} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}>
+          {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+          {!collapsed && <span>Collapse</span>}
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function Header({ sidebarCollapsed, onMobileMenu }) {
+  return (
+    <header className="topbar">
+      <button className="mobile-menu" onClick={onMobileMenu} aria-label="Open navigation"><Menu /></button>
+      <Logo />
+      <div className="corridor-title">India–Israel Construction Workforce Corridor</div>
+      <div className="topbar-controls">
+        <span className="environment-chip"><Database />Synthetic data</span>
+        <span className="environment-chip"><ShieldCheck />Prototype — AI off</span>
+        <span className="date-chip"><Clock3 />27 Aug 2026</span>
+        <button className="profile-button" aria-label="Open case manager profile">CM</button>
+      </div>
+    </header>
+  );
+}
+
+function MetaItem({ label, children }) {
+  return <div className="meta-item"><span>{label}</span><strong>{children}</strong></div>;
+}
+
+function EvidenceTable({ groups, openGroups, onToggle }) {
+  return (
+    <div className="evidence-table" role="table" aria-label="Evidence and tasks">
+      <div className="evidence-columns evidence-columns--head" role="row">
+        <span role="columnheader">Item</span><span role="columnheader">Requirement</span><span role="columnheader">Status</span><span role="columnheader">Updated</span>
+      </div>
+      {groups.map((group) => (
+        <section className="evidence-group" key={group.id}>
+          <button className="group-heading" onClick={() => onToggle(group.id)} aria-expanded={openGroups[group.id]}>
+            <span className={`group-tone group-tone--${group.tone}`} aria-hidden="true">
+              {group.tone === "complete" ? <CheckCircle2 /> : group.tone === "warning" ? <CircleAlert /> : <Circle />}
+            </span>
+            <span className="group-title">{group.title}</span>
+            <span className="group-summary">{group.summary}</span>
+            <ChevronDown className={openGroups[group.id] ? "chevron--open" : ""} aria-hidden="true" />
+          </button>
+          {openGroups[group.id] && (
+            <div className="group-rows">
+              {group.items.map((item) => (
+                <div className="evidence-columns evidence-row" role="row" key={item.name}>
+                  <div role="cell" className="item-name"><StatusIcon status={item.status} />{item.name}</div>
+                  <span role="cell">{item.requirement}</span>
+                  <span role="cell" className={`status status--${item.status.toLowerCase().replace(" ", "-")}`}><StatusIcon status={item.status} />{item.status}</span>
+                  <span role="cell">{item.updated}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function IntegrityPanel() {
+  return (
+    <section className="side-card integrity-card">
+      <div className="side-card-title"><h2>Evidence integrity</h2><Info aria-label="Append-only evidence information" /></div>
+      <p>This case file is append-only.</p>
+      <dl className="integrity-list">
+        <div><dt><CheckCircle2 />Digital signatures</dt><dd>Enforced</dd></div>
+        <div><dt><CheckCircle2 />Hash verification</dt><dd>Enabled</dd></div>
+        <div><dt><CircleAlert />Tamper detection</dt><dd>Active</dd></div>
+        <div><dt><Clock3 />Last integrity check</dt><dd>27 Aug 2026, 09:14</dd></div>
+      </dl>
+    </section>
+  );
+}
+
+function AccessPanel() {
+  return (
+    <section className="side-card">
+      <div className="side-card-title"><h2>Access scope</h2><UsersRound aria-hidden="true" /></div>
+      <p>Who can access this case</p>
+      <dl className="access-list">
+        <div><dt>Ta'agid staff</dt><dd>4 users</dd></div>
+        <div><dt>Internal auditors</dt><dd>2 users</dd></div>
+        <div><dt>Read-only auditors</dt><dd>1 user</dd></div>
+      </dl>
+      <button className="text-button">View full access list <ChevronRight /></button>
+    </section>
+  );
+}
+
+function AuditPanel({ events, onViewAll }) {
+  return (
+    <section className="side-card audit-card">
+      <div className="side-card-title"><h2>Recent audit events</h2><History aria-hidden="true" /></div>
+      <p>All events are append-only.</p>
+      <ol className="timeline">
+        {events.slice(0, 4).map((event) => (
+          <li key={`${event.time}-${event.title}`}>
+            <time>{event.time}</time>
+            <strong>{event.title}</strong>
+            <span>{event.detail}</span>
+            <small>by {event.actor}</small>
+          </li>
+        ))}
+      </ol>
+      <button className="text-button" onClick={onViewAll}>View full audit log <ChevronRight /></button>
+    </section>
+  );
+}
+
+function RequestModal({ selected, setSelected, onClose, onSubmit }) {
+  const missingItems = GROUPS.flatMap((group) => group.items).filter((item) => item.status === "Missing");
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="request-title">
+        <div className="modal-header">
+          <div><span className="eyebrow">CASE CAS-2026-00417</span><h2 id="request-title">Request missing evidence</h2></div>
+          <button className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
+        </div>
+        <p className="modal-intro">Choose the evidence items to request. This creates a recorded communication task; it does not change the case state.</p>
+        <fieldset>
+          <legend>Evidence items</legend>
+          {missingItems.map((item) => (
+            <label className="check-row" key={item.name}>
+              <input
+                type="checkbox"
+                checked={selected.includes(item.name)}
+                onChange={() => setSelected((current) => current.includes(item.name) ? current.filter((x) => x !== item.name) : [...current, item.name])}
+              />
+              <span className="custom-check"><Check /></span>
+              <span><strong>{item.name}</strong><small>Required before pre-submission</small></span>
+            </label>
+          ))}
+        </fieldset>
+        <label className="message-label">Message<textarea defaultValue="Please provide the selected evidence items so the case review can continue. Do not send original identity documents by email." /></label>
+        <div className="modal-notice"><LockKeyhole />The request is logged with its selected items, timestamp, actor and tenant context.</div>
+        <div className="modal-actions">
+          <button className="secondary-button" onClick={onClose}>Cancel</button>
+          <button className="primary-button" onClick={onSubmit} disabled={!selected.length}><Send />Send request</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ReviewModal({ onClose, onRecord }) {
+  const [note, setNote] = useState("Evidence set reviewed. Missing items remain open; no state transition requested.");
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="modal modal--compact" role="dialog" aria-modal="true" aria-labelledby="review-title">
+        <div className="modal-header">
+          <div><span className="eyebrow">INTERNAL REVIEW</span><h2 id="review-title">Record review</h2></div>
+          <button className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
+        </div>
+        <div className="review-boundary"><Info />This review records an operational observation only. It is not a visa, permit, employment or government decision.</div>
+        <label className="message-label">Review note<textarea value={note} onChange={(event) => setNote(event.target.value)} /></label>
+        <div className="modal-actions">
+          <button className="secondary-button" onClick={onClose}>Cancel</button>
+          <button className="primary-button" onClick={() => onRecord(note)} disabled={!note.trim()}><FileCheck2 />Record review</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CaseScreen({ events, setEvents, showToast }) {
+  const [tab, setTab] = useState("Evidence & tasks");
+  const [openGroups, setOpenGroups] = useState(() => Object.fromEntries(GROUPS.map((g) => [g.id, g.defaultOpen])));
+  const [modal, setModal] = useState(null);
+  const [selectedMissing, setSelectedMissing] = useState(["Safety training certificate", "Insurance (health & personal accident)"]);
+  const tabs = ["Case overview", "Evidence & tasks", "Communications", "History"];
+
+  const submitRequest = () => {
+    const event = { time: "27 Aug 2026, 11:42", title: "Evidence requested", detail: `${selectedMissing.length} missing item${selectedMissing.length === 1 ? "" : "s"}`, actor: "Case Manager" };
+    setEvents((current) => [event, ...current]);
+    setModal(null);
+    showToast("Evidence request recorded and queued");
+  };
+
+  const recordReview = (note) => {
+    setEvents((current) => [{ time: "27 Aug 2026, 11:45", title: "Review recorded", detail: note, actor: "Case Manager" }, ...current]);
+    setModal(null);
+    showToast("Review appended to the case history");
+  };
+
+  return (
+    <>
+      <main className="case-page">
+        <button className="back-link"><ArrowLeft />Back to cases</button>
+        <section className="case-heading">
+          <div className="title-row"><h1>Case CAS-2026-00417</h1><span className="state-chip"><CircleAlert />Evidence incomplete</span></div>
+          <div className="case-meta">
+            <MetaItem label="Worker ID">Worker 00417</MetaItem>
+            <MetaItem label="Ta'agid">Cedar Workforce Ltd.</MetaItem>
+            <MetaItem label="Case type">Construction Worker</MetaItem>
+            <MetaItem label="Date opened">20 Aug 2026</MetaItem>
+            <MetaItem label="Current stage">Pre-Submission</MetaItem>
+            <MetaItem label="Last updated">27 Aug 2026</MetaItem>
+          </div>
+        </section>
+        <div className="tabs" role="tablist" aria-label="Case sections">
+          {tabs.map((name) => <button key={name} role="tab" aria-selected={tab === name} className={tab === name ? "tab--active" : ""} onClick={() => setTab(name)}>{name}</button>)}
+        </div>
+        <div className="content-grid">
+          <section className="main-card">
+            {tab === "Evidence & tasks" && (
+              <>
+                <div className="main-card-header">
+                  <div><h2>Evidence & tasks</h2><p>Complete all required items to move to submission.</p></div>
+                  <div className="header-actions">
+                    <button className="secondary-button" onClick={() => setModal("review")}><FileCheck2 />Record review</button>
+                    <button className="primary-button" onClick={() => setModal("request")}><Mail />Request missing evidence</button>
+                  </div>
+                </div>
+                <EvidenceTable groups={GROUPS} openGroups={openGroups} onToggle={(id) => setOpenGroups((current) => ({ ...current, [id]: !current[id] }))} />
+              </>
+            )}
+            {tab === "Case overview" && <OverviewTab />}
+            {tab === "Communications" && <CommunicationsTab onRequest={() => setModal("request")} events={events} />}
+            {tab === "History" && <HistoryTab events={events} />}
+          </section>
+          <aside className="right-column">
+            <IntegrityPanel />
+            <AccessPanel />
+            <AuditPanel events={events} onViewAll={() => setTab("History")} />
+          </aside>
+        </div>
+        <footer className="page-footer"><span>All timestamps in local time (UTC+3).</span><span>Prototype fixture PT-CASE-00417</span></footer>
+      </main>
+      {modal === "request" && <RequestModal selected={selectedMissing} setSelected={setSelectedMissing} onClose={() => setModal(null)} onSubmit={submitRequest} />}
+      {modal === "review" && <ReviewModal onClose={() => setModal(null)} onRecord={recordReview} />}
+    </>
+  );
+}
+
+function OverviewTab() {
+  return (
+    <div className="tab-content overview-content">
+      <div className="main-card-header"><div><h2>Case overview</h2><p>Current operational state and bounded next actions.</p></div></div>
+      <div className="overview-banner"><CircleAlert /><div><strong>Three required evidence items are missing</strong><span>The case remains in Pre-Submission until the evidence is recorded and reviewed.</span></div></div>
+      <div className="overview-sections">
+        <section><h3>Current responsibility</h3><dl><div><dt>Owner</dt><dd>Ta'agid Case Management</dd></div><div><dt>Next action</dt><dd>Request missing evidence</dd></div><div><dt>SLA state</dt><dd>Due in 2 working days</dd></div></dl></section>
+        <section><h3>Boundary</h3><p>IICPlatform records workflow and evidence. It does not issue permits, visas, employment decisions or legal conclusions.</p></section>
+      </div>
+    </div>
+  );
+}
+
+function CommunicationsTab({ onRequest, events }) {
+  const requests = events.filter((e) => e.title === "Evidence requested");
+  return (
+    <div className="tab-content communications-content">
+      <div className="main-card-header"><div><h2>Communications</h2><p>Case-bound messages and requests.</p></div><button className="primary-button" onClick={onRequest}><Plus />New evidence request</button></div>
+      {requests.length ? requests.map((request) => <article className="communication-row" key={request.time}><div className="communication-icon"><Mail /></div><div><strong>{request.title}</strong><span>{request.detail}</span><small>{request.time} · {request.actor}</small></div><span className="delivery-state"><CheckCircle2 />Queued</span></article>) : <div className="empty-state"><MessageSquareText /><h3>No case communications yet</h3><p>Requests sent from this case will appear here with delivery evidence.</p></div>}
+    </div>
+  );
+}
+
+function HistoryTab({ events }) {
+  return (
+    <div className="tab-content history-content">
+      <div className="main-card-header"><div><h2>Case history</h2><p>Append-only operational events for this synthetic case.</p></div><button className="secondary-button"><SlidersHorizontal />Filter</button></div>
+      <ol className="history-list">
+        {events.map((event) => <li key={`${event.time}-${event.title}`}><div className="history-marker"><FileClock /></div><div><time>{event.time}</time><strong>{event.title}</strong><p>{event.detail}</p><small>Recorded by {event.actor}</small></div></li>)}
+      </ol>
+    </div>
+  );
+}
+
+function PlaceholderScreen({ activeNav, onBack }) {
+  const item = NAV_ITEMS.find((nav) => nav.id === activeNav);
+  return (
+    <main className="placeholder-page">
+      <button className="back-link" onClick={onBack}><ArrowLeft />Return to case</button>
+      <div className="placeholder-panel">
+        <div className="placeholder-icon">{item ? <item.icon /> : <CircleHelp />}</div>
+        <span className="eyebrow">PROTOTYPE BOUNDARY</span>
+        <h1>{item?.label || "Help"}</h1>
+        <p>This destination is represented in navigation but is outside the selected evidence-first prototype journey.</p>
+        <button className="primary-button" onClick={onBack}>Open Case CAS-2026-00417</button>
+      </div>
+    </main>
+  );
+}
+
+export function App() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState("cases");
+  const [events, setEvents] = useState(INITIAL_AUDIT);
+  const [toast, setToast] = useState("");
+
+  const showToast = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 3200);
+  };
+
+  const navigate = (id) => {
+    setActiveNav(id);
+    setMobileNavOpen(false);
+  };
+
+  return (
+    <div className={`app-shell ${sidebarCollapsed ? "app-shell--collapsed" : ""} ${mobileNavOpen ? "app-shell--mobile-open" : ""}`}>
+      <Header sidebarCollapsed={sidebarCollapsed} onMobileMenu={() => setMobileNavOpen(true)} />
+      {mobileNavOpen && <button className="mobile-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation" />}
+      <Sidebar collapsed={sidebarCollapsed} activeNav={activeNav} onNavigate={navigate} onCollapse={() => setSidebarCollapsed((value) => !value)} />
+      {activeNav === "cases" ? <CaseScreen events={events} setEvents={setEvents} showToast={showToast} /> : <PlaceholderScreen activeNav={activeNav} onBack={() => setActiveNav("cases")} />}
+      {toast && <div className="toast" role="status"><CheckCircle2 />{toast}</div>}
+    </div>
+  );
+}
+
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App.jsx";
+import "./styles.css";
+
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #102c4c;
+  background: #f7f9fb;
+  font-synthesis: none;
+  --navy-950: #062a4c;
+  --navy-900: #07365f;
+  --navy-800: #0b4773;
+  --navy-700: #14598a;
+  --teal-700: #087f91;
+  --teal-600: #0d91a1;
+  --teal-100: #d9f2f5;
+  --blue-100: #e9f3fb;
+  --ink: #102c4c;
+  --muted: #61748a;
+  --line: #d5dee7;
+  --line-soft: #e7edf2;
+  --surface: #ffffff;
+  --surface-soft: #f5f8fa;
+  --amber: #be7900;
+  --amber-soft: #fff2d6;
+  --green: #16733c;
+  --green-soft: #e9f7ee;
+  --red: #c03935;
+  --focus: #00b9d0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7f9fb;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, textarea { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  grid-template-rows: 58px minmax(0, 1fr);
+  background: #f8fafc;
+}
+
+.app-shell--collapsed { grid-template-columns: 68px minmax(0, 1fr); }
+
+.topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  background: var(--navy-950);
+  color: white;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.logo {
+  width: 216px;
+  height: 58px;
+  flex: 0 0 216px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  border-right: 1px solid rgba(255,255,255,.13);
+}
+
+.logo span { color: #40b4be; font-family: Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: -.7px; }
+.corridor-title { padding: 0 20px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-controls { margin-left: auto; display: flex; align-items: center; height: 100%; }
+.environment-chip, .date-chip { display: inline-flex; align-items: center; gap: 7px; padding: 0 14px; height: 100%; font-size: 12px; font-weight: 600; border-left: 1px solid rgba(255,255,255,.14); white-space: nowrap; }
+.environment-chip svg, .date-chip svg { width: 15px; height: 15px; }
+.profile-button { width: 34px; height: 34px; margin: 0 16px; border: 0; border-radius: 50%; background: #eef3f7; color: var(--navy-950); font-size: 12px; font-weight: 700; cursor: pointer; }
+.mobile-menu { display: none; background: transparent; border: 0; color: white; margin-left: 8px; padding: 8px; }
+
+.sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: calc(100vh - 58px);
+  background: var(--navy-950);
+  color: #eef7ff;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 58px;
+  height: calc(100vh - 58px);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.tenant-block { min-height: 76px; display: flex; align-items: center; gap: 10px; padding: 13px 17px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.tenant-icon { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; flex: 0 0 34px; }
+.tenant-icon svg { width: 18px; }
+.tenant-block strong { display: block; font-size: 12px; line-height: 1.35; }
+.tenant-block span { display: block; font-size: 10px; color: #c3d4e3; margin-top: 2px; }
+.sidebar nav { padding: 8px 0; }
+.nav-item, .collapse-button { width: 100%; height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border: 0; background: transparent; color: #eef7ff; text-align: left; cursor: pointer; position: relative; font-size: 13px; font-weight: 600; }
+.nav-item svg, .collapse-button svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.9; }
+.nav-item:hover, .collapse-button:hover { background: rgba(255,255,255,.08); }
+.nav-item--active { background: #0f6f91; }
+.nav-item--active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #35d0cf; }
+.nav-count { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; background: #f4a900; color: #17283d; font-size: 11px; font-weight: 800; }
+.sidebar-bottom { margin-top: auto; padding-bottom: 10px; border-top: 1px solid rgba(255,255,255,.12); }
+.collapse-button { color: #bfd1df; font-weight: 500; }
+.sidebar--collapsed .tenant-block { padding-inline: 17px; }
+.sidebar--collapsed .nav-item, .sidebar--collapsed .collapse-button { padding-inline: 25px; }
+
+.case-page, .placeholder-page {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  padding: 14px 24px 8px;
+  background: #fbfcfd;
+}
+
+.back-link, .text-button { border: 0; background: transparent; color: #155b8e; display: inline-flex; align-items: center; gap: 7px; padding: 5px 0; font-size: 12px; cursor: pointer; }
+.back-link svg { width: 15px; }
+.case-heading { margin-top: 6px; }
+.title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+h1 { font-size: 25px; line-height: 1.15; margin: 0; color: #12304f; letter-spacing: -.45px; }
+.state-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--amber-soft); color: #795200; border: 1px solid #f0d394; border-radius: 4px; padding: 6px 10px; font-size: 11px; font-weight: 700; }
+.state-chip svg { width: 14px; height: 14px; }
+.case-meta { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 20px; padding: 18px 0 15px; }
+.meta-item span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; }
+.meta-item strong { display: block; font-size: 13px; font-weight: 650; color: #193653; }
+
+.tabs { height: 42px; display: flex; gap: 4px; border-bottom: 1px solid #bcc9d5; }
+.tabs button { border: 0; background: transparent; padding: 0 14px; color: #526b82; font-size: 12px; font-weight: 600; cursor: pointer; position: relative; }
+.tabs button:hover { color: var(--navy-700); }
+.tabs .tab--active { color: var(--navy-800); }
+.tabs .tab--active::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 3px; background: #12638f; }
+
+.content-grid { display: grid; grid-template-columns: minmax(650px, 1fr) 290px; gap: 18px; padding-top: 12px; align-items: start; }
+.main-card, .side-card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.main-card { min-width: 0; overflow: hidden; }
+.main-card-header { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.main-card-header h2, .side-card h2 { margin: 0; font-size: 16px; line-height: 1.3; }
+.main-card-header p, .side-card p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.header-actions { display: flex; gap: 10px; }
+.primary-button, .secondary-button { min-height: 38px; border-radius: 3px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.primary-button { border: 1px solid var(--navy-800); background: var(--navy-800); color: white; }
+.primary-button:hover { background: var(--navy-700); }
+.primary-button:disabled { background: #aab8c4; border-color: #aab8c4; cursor: not-allowed; }
+.secondary-button { border: 1px solid #3573a3; background: white; color: #155b8e; }
+.secondary-button:hover { background: #f0f7fc; }
+.primary-button svg, .secondary-button svg { width: 16px; height: 16px; }
+
+.evidence-columns { display: grid; grid-template-columns: minmax(280px, 1.55fr) minmax(110px, .7fr) minmax(130px, .75fr) minmax(92px, .55fr); align-items: center; column-gap: 16px; }
+.evidence-columns--head { min-height: 38px; padding: 0 18px; background: #f4f7f9; border-bottom: 1px solid var(--line); color: #536b82; font-size: 10px; font-weight: 700; }
+.evidence-group { border-bottom: 1px solid var(--line); }
+.evidence-group:last-child { border-bottom: 0; }
+.group-heading { width: 100%; min-height: 44px; display: grid; grid-template-columns: 24px minmax(250px, 1fr) auto 18px; align-items: center; gap: 8px; padding: 0 16px; border: 0; background: #f7f9fb; color: #173a5d; text-align: left; cursor: pointer; }
+.group-heading:hover { background: #eef4f7; }
+.group-title { font-size: 12px; font-weight: 750; }
+.group-summary { color: #526b82; font-size: 10px; }
+.group-tone svg { width: 14px; height: 14px; }
+.group-tone--complete { color: var(--green); }
+.group-tone--warning { color: var(--amber); }
+.group-tone--neutral { color: #6d8092; }
+.group-heading > svg { width: 16px; transition: transform .15s ease; }
+.group-heading > .chevron--open { transform: rotate(180deg); }
+.evidence-row { min-height: 38px; padding: 0 18px 0 40px; color: #3c5369; font-size: 11px; border-top: 1px solid var(--line-soft); }
+.evidence-row:hover { background: #f9fcfd; }
+.item-name, .status { display: flex; align-items: center; gap: 8px; }
+.item-name svg, .status svg { width: 14px; height: 14px; flex: 0 0 14px; }
+.item-name > svg { color: #507189; }
+.status--completed { color: var(--green); }
+.status--missing { color: #a76400; font-weight: 700; }
+.status--not-started { color: #64798c; }
+
+.right-column { display: grid; gap: 12px; }
+.side-card { padding: 14px; }
+.side-card-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.side-card-title svg { width: 16px; height: 16px; color: #4d677e; }
+.integrity-list, .access-list { margin: 12px 0 0; }
+.integrity-list > div, .access-list > div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line-soft); font-size: 10px; }
+.integrity-list dt, .access-list dt { display: flex; align-items: center; gap: 7px; color: #334e68; }
+.integrity-list dt svg { width: 14px; height: 14px; color: #315675; }
+.integrity-list dd, .access-list dd { margin: 0; color: #536b82; text-align: right; }
+.text-button { font-weight: 650; margin-top: 5px; }
+.text-button svg { width: 14px; height: 14px; }
+.timeline { list-style: none; padding: 2px 0 0 14px; margin: 12px 0 0; border-left: 1px solid #c3d1dc; }
+.timeline li { position: relative; padding: 0 0 13px 10px; display: grid; gap: 2px; }
+.timeline li::before { content: ""; position: absolute; width: 7px; height: 7px; border-radius: 50%; background: white; border: 1.5px solid #56748d; left: -18px; top: 3px; }
+.timeline time, .timeline small { color: #607589; font-size: 9px; }
+.timeline strong { font-size: 10px; }
+.timeline span { color: #526b82; font-size: 9px; line-height: 1.4; }
+
+.tab-content { min-height: 620px; }
+.overview-banner { display: flex; gap: 12px; margin: 18px; padding: 16px; background: var(--amber-soft); border-left: 4px solid var(--amber); }
+.overview-banner svg { width: 20px; flex: 0 0 20px; color: var(--amber); }
+.overview-banner strong, .overview-banner span { display: block; }
+.overview-banner strong { font-size: 13px; }
+.overview-banner span { font-size: 11px; color: #63583e; margin-top: 4px; }
+.overview-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 18px 18px; }
+.overview-sections section { border-top: 1px solid var(--line); padding-top: 14px; }
+.overview-sections h3 { margin: 0 0 10px; font-size: 13px; }
+.overview-sections p { font-size: 12px; line-height: 1.6; color: #4d6478; }
+.overview-sections dl { margin: 0; }
+.overview-sections dl div { display: flex; justify-content: space-between; gap: 18px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 11px; }
+.overview-sections dd { margin: 0; font-weight: 650; text-align: right; }
+.empty-state { min-height: 450px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6d8193; text-align: center; padding: 40px; }
+.empty-state svg { width: 38px; height: 38px; stroke-width: 1.3; }
+.empty-state h3 { margin: 14px 0 5px; color: #294963; font-size: 15px; }
+.empty-state p { max-width: 360px; margin: 0; font-size: 11px; line-height: 1.55; }
+.communication-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
+.communication-icon { width: 36px; height: 36px; background: var(--blue-100); display: grid; place-items: center; color: var(--navy-700); border-radius: 50%; }
+.communication-icon svg { width: 17px; }
+.communication-row strong, .communication-row span, .communication-row small { display: block; }
+.communication-row strong { font-size: 12px; }
+.communication-row span { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.communication-row small { font-size: 9px; color: #7a8b9b; margin-top: 4px; }
+.delivery-state { display: flex !important; gap: 5px; align-items: center; color: var(--green) !important; font-weight: 700; }
+.delivery-state svg { width: 14px; }
+.history-list { list-style: none; margin: 0; padding: 14px 18px; }
+.history-list li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.history-marker { width: 30px; height: 30px; border-radius: 50%; background: var(--blue-100); display: grid; place-items: center; color: var(--navy-700); }
+.history-marker svg { width: 15px; }
+.history-list time, .history-list strong, .history-list small { display: block; }
+.history-list time { font-size: 9px; color: #708294; }
+.history-list strong { font-size: 12px; margin-top: 3px; }
+.history-list p { margin: 4px 0; font-size: 11px; color: #526b82; }
+.history-list small { font-size: 9px; color: #708294; }
+.page-footer { display: flex; justify-content: space-between; gap: 16px; color: #78899a; font-size: 9px; padding: 8px 4px 0; }
+
+.modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(2, 23, 43, .5); display: grid; place-items: center; padding: 24px; }
+.modal { width: min(600px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; background: white; border-radius: 5px; box-shadow: 0 18px 55px rgba(3, 31, 56, .28); }
+.modal--compact { width: min(520px, calc(100vw - 32px)); }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { display: block; font-size: 9px; letter-spacing: .1em; font-weight: 800; color: #6a7e90; margin-bottom: 5px; }
+.modal h2 { margin: 0; font-size: 19px; }
+.icon-button { width: 34px; height: 34px; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.icon-button:hover { background: #eef4f7; }
+.icon-button svg { width: 18px; }
+.modal-intro { margin: 0; padding: 14px 20px; color: #526b82; font-size: 11px; line-height: 1.5; }
+.modal fieldset { border: 0; padding: 0 20px; margin: 0; }
+.modal legend { width: 100%; font-size: 11px; font-weight: 750; padding: 0 0 8px; border-bottom: 1px solid var(--line); }
+.check-row { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line-soft); cursor: pointer; position: relative; }
+.check-row input { position: absolute; opacity: 0; }
+.custom-check { width: 18px; height: 18px; border: 1px solid #7890a3; border-radius: 2px; display: grid; place-items: center; }
+.custom-check svg { width: 13px; opacity: 0; }
+.check-row input:checked + .custom-check { background: var(--navy-700); border-color: var(--navy-700); color: white; }
+.check-row input:checked + .custom-check svg { opacity: 1; }
+.check-row input:focus-visible + .custom-check { outline: 3px solid var(--focus); outline-offset: 2px; }
+.check-row strong, .check-row small { display: block; }
+.check-row strong { font-size: 11px; }
+.check-row small { margin-top: 2px; font-size: 9px; color: #6d8092; }
+.message-label { display: grid; gap: 6px; margin: 14px 20px; font-size: 11px; font-weight: 750; }
+.message-label textarea { min-height: 84px; padding: 10px; resize: vertical; border: 1px solid #aab9c6; border-radius: 3px; color: #28465f; font-size: 11px; line-height: 1.5; }
+.modal-notice, .review-boundary { margin: 0 20px 14px; padding: 10px 12px; display: flex; gap: 9px; align-items: flex-start; background: var(--blue-100); color: #37566f; font-size: 10px; line-height: 1.5; }
+.modal-notice svg, .review-boundary svg { width: 15px; flex: 0 0 15px; }
+.review-boundary { margin-top: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line); background: #f7f9fb; }
+.toast { position: fixed; right: 24px; bottom: 22px; z-index: 100; display: flex; align-items: center; gap: 9px; min-width: 280px; padding: 13px 16px; background: #123d5f; color: white; border-left: 4px solid #3bc5bb; box-shadow: 0 10px 26px rgba(8, 38, 64, .2); font-size: 12px; font-weight: 650; }
+.toast svg { width: 18px; }
+
+.placeholder-page { display: grid; place-items: center; position: relative; }
+.placeholder-page > .back-link { position: absolute; top: 18px; left: 24px; }
+.placeholder-panel { width: min(520px, 90vw); text-align: center; padding: 48px 36px; background: white; border: 1px solid var(--line); }
+.placeholder-icon { width: 52px; height: 52px; margin: 0 auto 18px; display: grid; place-items: center; background: var(--blue-100); color: var(--navy-700); border-radius: 50%; }
+.placeholder-icon svg { width: 24px; }
+.placeholder-panel h1 { margin: 6px 0 12px; }
+.placeholder-panel p { margin: 0 auto 22px; max-width: 390px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+.mobile-scrim { display: none; }
+
+@media (max-width: 1180px) {
+  .environment-chip:first-child, .date-chip { display: none; }
+  .case-meta { grid-template-columns: repeat(3, 1fr); row-gap: 12px; }
+  .content-grid { grid-template-columns: minmax(600px, 1fr) 250px; }
+  .evidence-columns { grid-template-columns: minmax(240px, 1.35fr) minmax(90px, .55fr) minmax(115px, .65fr) 80px; gap: 10px; }
+}
+
+@media (max-width: 920px) {
+  .app-shell, .app-shell--collapsed { grid-template-columns: 1fr; }
+  .topbar { grid-column: 1; }
+  .logo { width: auto; flex-basis: auto; padding-left: 8px; border-right: 0; }
+  .mobile-menu { display: grid; place-items: center; }
+  .corridor-title { display: none; }
+  .sidebar { position: fixed; left: 0; top: 58px; width: 216px; transform: translateX(-100%); transition: transform .18s ease; }
+  .app-shell--mobile-open .sidebar { transform: translateX(0); }
+  .app-shell--mobile-open .mobile-scrim { display: block; position: fixed; inset: 58px 0 0; z-index: 25; border: 0; background: rgba(3, 29, 51, .42); }
+  .case-page, .placeholder-page { grid-column: 1; }
+  .content-grid { grid-template-columns: 1fr; }
+  .right-column { grid-template-columns: repeat(3, 1fr); }
+  .tab-content { min-height: auto; }
+}
+
+@media (max-width: 680px) {
+  .topbar-controls .environment-chip { display: none; }
+  .profile-button { margin-inline: 8px; }
+  .case-page, .placeholder-page { padding: 12px; }
+  h1 { font-size: 21px; }
+  .case-meta { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .tabs { overflow-x: auto; }
+  .tabs button { flex: 0 0 auto; }
+  .main-card-header { align-items: flex-start; flex-direction: column; }
+  .header-actions { width: 100%; }
+  .header-actions button { flex: 1; }
+  .evidence-columns--head { display: none; }
+  .evidence-row { grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 14px 10px 36px; }
+  .evidence-row > :nth-child(2) { display: none; }
+  .evidence-row > :nth-child(4) { grid-column: 2; font-size: 9px; }
+  .group-heading { grid-template-columns: 22px 1fr 18px; padding: 0 12px; }
+  .group-summary { display: none; }
+  .right-column { grid-template-columns: 1fr; }
+  .overview-sections { grid-template-columns: 1fr; }
+  .page-footer { flex-direction: column; }
+}
