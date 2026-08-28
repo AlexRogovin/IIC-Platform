@@ -38,9 +38,6 @@ npm run build
 npm run test:sites
 ```
 
-## Sources of visual truth
+## Design baseline
 
-- `design-reference-option-1.png`: Operational Command Center and exception queue.
-- `design-reference-option-2.png`: Evidence-first case file.
-
-The implementation follows their shared navy/teal visual system while using semantic React controls, synthetic data and a responsive desktop layout.
+The implementation follows the approved Operational Command Center and Evidence-First Case File direction, using a shared navy/teal visual system, semantic React controls, synthetic data and a responsive desktop layout. Final QA screenshots remain controlled review artifacts; the repository contains the complete executable source and has no runtime dependency on the original design references.
